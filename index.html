@@ -1,0 +1,1826 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Roblox Obby Coding ตาราง 5x8 - วิทยาการคำนวณ ป.2</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Kanit & Prompt สำหรับภาษาไทยที่อ่านง่ายสำหรับเด็ก -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700;800;900&family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Kanit', 'Prompt', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      overflow-x: hidden;
+      /* ฉากหลังท้องฟ้าสไตล์ Roblox Baseplate */
+      background: linear-gradient(180deg, #38bdf8 0%, #7dd3fc 62%, #4ade80 62%, #16a34a 100%);
+    }
+
+    /* ลวดลายปุ่มตัวต่อ (Studs) สไตล์พื้นบล็อก Roblox */
+    .roblox-studs {
+      background-image: radial-gradient(rgba(255, 255, 255, 0.35) 22%, transparent 24%),
+                        radial-gradient(rgba(0, 0, 0, 0.06) 24%, transparent 26%);
+      background-size: 24px 24px;
+      background-position: 0 0, 1px 1px;
+    }
+
+    /* เอฟเฟกต์ก้อนเมฆเหลี่ยมสไตล์ Roblox */
+    @keyframes floatCloud {
+      0%, 100% { transform: translateX(0px); }
+      50% { transform: translateX(20px); }
+    }
+    .cloud-anim {
+      animation: floatCloud 8s ease-in-out infinite;
+    }
+
+    /* เอฟเฟกต์เหรียญ Robux หมุนเด้ง */
+    @keyframes robuxFloat {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-5px) scale(1.08); }
+    }
+    .robux-anim {
+      animation: robuxFloat 1.4s ease-in-out infinite;
+    }
+
+    /* เอฟเฟกต์บล็อกลาวาเรืองแสงเดือดปุดๆ */
+    @keyframes lavaPulse {
+      0%, 100% { filter: brightness(1) drop-shadow(0 0 4px rgba(239, 68, 68, 0.7)); }
+      50% { filter: brightness(1.2) drop-shadow(0 0 10px rgba(249, 115, 22, 0.95)); }
+    }
+    .lava-anim {
+      animation: lavaPulse 1.5s ease-in-out infinite;
+    }
+
+    /* เอฟเฟกต์ซอมบี้บล็อกขยับตัว */
+    @keyframes zombieBlockWobble {
+      0%, 100% { transform: rotate(-4deg) translateY(0); }
+      50% { transform: rotate(4deg) translateY(-2px); }
+    }
+    .zombie-anim {
+      animation: zombieBlockWobble 1.6s ease-in-out infinite;
+    }
+
+    /* เอฟเฟกต์ตัวละครชนลาวาหรือซอมบี้ */
+    @keyframes shakeBump {
+      0%, 100% { transform: translate(0, 0); }
+      20% { transform: translate(-8px, 0); }
+      40% { transform: translate(8px, 0); }
+      60% { transform: translate(-6px, 0); }
+      80% { transform: translate(6px, 0); }
+    }
+    .bump-anim {
+      animation: shakeBump 0.45s ease-in-out;
+    }
+
+    /* ปุ่มสไตล์เกมนูน 3D กดสนุก */
+    .game-btn {
+      transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+    }
+    .game-btn:active:not(:disabled) {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3) !important;
+    }
+    .game-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    /* ไฮไลต์ช่องคำสั่งที่กำลังทำงาน */
+    .slot-active {
+      border-color: #00b06f !important;
+      border-style: solid !important;
+      background-color: #dcfce7 !important;
+      transform: scale(1.08);
+      box-shadow: 0 0 16px rgba(0, 176, 111, 0.9);
+      z-index: 10;
+    }
+
+    /* การเคลื่อนที่ของตัวละครบนกระดาน */
+    #player-sprite {
+      transition: left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), top 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    #player-rotator {
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-2 sm:p-4 relative">
+
+  <!-- องค์ประกอบตกแต่งฉากหลัง (ก้อนเมฆเหลี่ยมและบล็อกตกแต่งสไตล์ Roblox) -->
+  <div class="pointer-events-none fixed inset-0 overflow-hidden z-0">
+    <!-- เมฆเหลี่ยมซ้าย -->
+    <div class="cloud-anim absolute top-6 left-6 opacity-90">
+      <div class="w-24 h-8 bg-white rounded-md shadow-md relative">
+        <div class="w-12 h-6 bg-white rounded-md -top-4 left-4 absolute"></div>
+      </div>
+    </div>
+    <!-- เมฆเหลี่ยมขวา -->
+    <div class="cloud-anim absolute top-12 right-10 opacity-85" style="animation-delay: 2.5s;">
+      <div class="w-28 h-9 bg-white rounded-md shadow-md relative">
+        <div class="w-14 h-7 bg-white rounded-md -top-4 left-6 absolute"></div>
+      </div>
+    </div>
+    <!-- พุ่มไม้เหลี่ยมด้านล่าง -->
+    <div class="absolute bottom-14 left-3 w-24 h-12 bg-emerald-600 rounded-lg border-b-4 border-emerald-800 opacity-90 roblox-studs"></div>
+    <div class="absolute bottom-14 right-4 w-28 h-14 bg-emerald-600 rounded-lg border-b-4 border-emerald-800 opacity-90 roblox-studs"></div>
+  </div>
+
+  <!-- หน้าต่างลงทะเบียนนักเรียนก่อนเริ่มเกม (Student Registration Modal) -->
+  <div id="student-login-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border-4 border-slate-800 my-auto">
+      <div class="text-center mb-4">
+        <div class="inline-flex items-center gap-2 bg-slate-900 text-white px-3.5 py-1 rounded-full text-xs font-black tracking-wider mb-2">
+          <span>🎮 ROBLOX OBBY CODING • ป.2</span>
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-black text-slate-900">ลงทะเบียนนักสำรวจโค้ดดิ้ง</h2>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1">กรอกชื่อและเลขที่เพื่อบันทึกคะแนนและรับเกียรติบัตรตอนจบเกม</p>
+      </div>
+
+      <form id="student-login-form" onsubmit="handleStudentStart(event)" class="space-y-3.5">
+        <div>
+          <label class="block text-sm font-extrabold text-slate-700 mb-1">ชื่อ - นามสกุล นักเรียน <span class="text-rose-500">*</span></label>
+          <input type="text" id="input-student-name" required placeholder="เช่น เด็กชายรักเรียน ขยันยิ่ง"
+            class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 focus:border-[#00b06f] focus:outline-none font-bold text-slate-800 text-base" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-extrabold text-slate-700 mb-1">ชั้นประถมศึกษาปีที่</label>
+            <select id="input-student-class" class="w-full px-3 py-2.5 rounded-xl border-2 border-slate-300 focus:border-[#00b06f] focus:outline-none font-bold text-slate-800 bg-white">
+              <option value="ป.2/1">ป.2/1</option>
+              <option value="ป.2/2">ป.2/2</option>
+              <option value="ป.2/3">ป.2/3</option>
+              <option value="ป.2/4">ป.2/4</option>
+              <option value="ป.2">ป.2 (ทั่วไป)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-extrabold text-slate-700 mb-1">เลขที่ <span class="text-rose-500">*</span></label>
+            <input type="number" id="input-student-no" required min="1" max="60" placeholder="เช่น 12"
+              class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 focus:border-[#00b06f] focus:outline-none font-bold text-slate-800 text-base" />
+          </div>
+        </div>
+
+        <!-- เลือกตัวละครเริ่มต้น -->
+        <div>
+          <label class="block text-sm font-extrabold text-slate-700 mb-1.5">เลือกตัวละครคู่ใจ (Avatar)</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" id="login-avatar-noob" onclick="selectLoginAvatar('noob')"
+              class="p-2 rounded-xl border-2 border-amber-400 bg-amber-50 flex flex-col items-center gap-1 cursor-pointer transition">
+              <div class="w-10 h-10" id="login-preview-noob"></div>
+              <span class="text-xs font-black text-slate-800">Noob</span>
+            </button>
+            <button type="button" id="login-avatar-bacon" onclick="selectLoginAvatar('bacon')"
+              class="p-2 rounded-xl border-2 border-slate-200 bg-slate-50 flex flex-col items-center gap-1 cursor-pointer transition">
+              <div class="w-10 h-10" id="login-preview-bacon"></div>
+              <span class="text-xs font-black text-slate-800">Bacon</span>
+            </button>
+            <button type="button" id="login-avatar-girl" onclick="selectLoginAvatar('girl')"
+              class="p-2 rounded-xl border-2 border-slate-200 bg-slate-50 flex flex-col items-center gap-1 cursor-pointer transition">
+              <div class="w-10 h-10" id="login-preview-girl"></div>
+              <span class="text-xs font-black text-slate-800">Girl</span>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="game-btn w-full py-3.5 mt-2 bg-[#00b06f] hover:bg-[#00c47c] text-white rounded-2xl border-4 border-emerald-200 shadow-[0_5px_0_#007a4d] font-black text-xl tracking-wide cursor-pointer">
+          🚀 เริ่มผจญภัยด่านที่ 1 เลย!
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ส่วนหัว (Top Bar): โลโก้ Roblox Coding, เหรียญ Robux, เลือกด่าน, พลังชีวิต, เสียง -->
+  <header class="relative z-10 w-full max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2 bg-slate-900/90 text-white backdrop-blur-md px-3 sm:px-4 py-2 rounded-2xl shadow-lg border-2 border-slate-700">
+    
+    <!-- โลโก้ + ตัวนับเหรียญ Robux (R$) -->
+    <div class="flex items-center gap-2 sm:gap-3">
+      <!-- ไอคอนสี่เหลี่ยมเอียงเอกลักษณ์ Roblox -->
+      <div class="flex items-center gap-1.5 bg-slate-800 px-2.5 py-1 rounded-xl border border-slate-600">
+        <div class="w-6 h-6 bg-white rounded-sm transform -rotate-12 flex items-center justify-center shadow">
+          <div class="w-2 h-2 bg-slate-900"></div>
+        </div>
+        <span class="font-black tracking-wider text-sm sm:text-base text-white hidden md:inline">ROBLOX <span class="text-emerald-400">CODING</span></span>
+      </div>
+
+      <!-- ตัวนับ Robux -->
+      <div class="flex items-center gap-1.5 bg-amber-500/20 px-3 py-1 rounded-xl border-2 border-amber-400">
+        <svg class="w-6 h-6 sm:w-7 sm:h-7 robux-anim" viewBox="0 0 36 36">
+          <!-- ทรงหกเหลี่ยมทองคำ Robux -->
+          <polygon points="18,2 32,10 32,26 18,34 4,26 4,10" fill="#fbbf24" stroke="#b45309" stroke-width="2.5"/>
+          <polygon points="18,6 28,12 28,24 18,30 8,24 8,12" fill="none" stroke="#fef08a" stroke-width="1.5"/>
+          <rect x="13" y="13" width="10" height="10" rx="1.5" fill="#78350f"/>
+          <rect x="16" y="16" width="4" height="4" fill="#fbbf24"/>
+        </svg>
+        <span class="text-lg sm:text-2xl font-black text-amber-300 tracking-wide">
+          R$ <span id="coin-count">0</span>/<span id="coin-total">1</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- ตัวเลือกด่าน (Level 1 - 10) -->
+    <div class="flex items-center gap-1.5 sm:gap-2">
+      <span class="hidden xl:inline font-bold text-slate-300 text-sm">ด่าน Obby:</span>
+      <div id="level-buttons" class="flex flex-wrap justify-center gap-1 sm:gap-1.5">
+        <!-- สร้างปุ่มด่าน 1-10 ด้วย JS -->
+      </div>
+    </div>
+
+    <!-- ตัวจับเวลา & โบนัสความเร็ว (Timer & Speed Challenge) -->
+    <div class="flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-xl border border-sky-500/60" title="เวลาด่านปัจจุบัน / เวลาเป้าหมายโบนัส">
+      <span class="text-base sm:text-lg">⏱️</span>
+      <div class="flex flex-col leading-tight">
+        <div class="flex items-center gap-1.5">
+          <span id="level-timer" class="font-mono font-black text-base sm:text-lg text-sky-300">00:00</span>
+          <span id="speed-badge" class="text-[10px] sm:text-xs font-extrabold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/50">
+            ⚡ โบนัสเต็ม
+          </span>
+        </div>
+        <span class="text-[10px] text-slate-400 hidden sm:inline">เป้าด่านนี้: ≤ <span id="target-time-text">30</span> วิ | รวม: <span id="total-timer-text">00:00</span></span>
+      </div>
+    </div>
+
+    <!-- พลังชีวิต (หัวใจ 3 ดวง) + ปุ่มรีเซ็ตด่าน + ปุ่มเสียง -->
+    <div class="flex items-center gap-2">
+      <div id="hearts-container" class="flex items-center gap-1 bg-slate-800 px-2.5 py-1 rounded-xl border border-slate-600" title="พลังชีวิต">
+        <!-- แสดงหัวใจ 3 ดวง -->
+      </div>
+
+      <button onclick="resetCurrentLevel()" class="px-2.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs sm:text-sm border-b-2 border-sky-800 transition cursor-pointer" title="เริ่มด่านนี้ใหม่">
+        🔄 เริ่มด่านใหม่
+      </button>
+
+      <button id="btn-sound" onclick="toggleSound()" class="p-1.5 sm:p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 transition cursor-pointer" title="เปิด/ปิดเสียง">
+        <span id="sound-icon" class="text-lg sm:text-xl">🔊</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- พื้นที่เล่นเกมหลัก (Main Content) -->
+  <main class="relative z-10 w-full max-w-6xl mx-auto flex-1 flex flex-col lg:flex-row items-center justify-center gap-4 my-2">
+    
+    <!-- ฝั่งซ้าย: แถบเลือกตัวละคร + กระดานตาราง 5x8 + แผงปุ่มควบคุมด้านล่าง -->
+    <div class="w-full lg:w-[66%] flex flex-col items-center gap-2.5">
+      
+      <!-- ป้ายภารกิจ + ชื่อนักเรียน + ปุ่มเลือกตัวละคร Roblox Avatar 3 สไตล์ -->
+      <div class="w-full bg-white/95 px-3 py-1.5 rounded-2xl shadow-md border-2 border-slate-200 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex flex-col">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span id="level-title" class="font-extrabold text-slate-800 text-sm sm:text-base">ด่านที่ 1: ก้าวแรกสู่ Obby</span>
+            <span id="hud-student-badge" onclick="openStudentLogin()" class="text-[11px] sm:text-xs font-extrabold bg-sky-100 text-sky-800 border border-sky-300 px-2 py-0.5 rounded-full cursor-pointer hover:bg-sky-200" title="คลิกเพื่อแก้ไขชื่อนักเรียน">
+              👤 ผู้เล่น: นักเรียน ป.2
+            </span>
+          </div>
+          <span id="level-hint" class="text-xs text-slate-500 font-medium hidden sm:inline">พาตัวละครเก็บเหรียญ Robux และระวังลาวากับซอมบี้!</span>
+        </div>
+
+        <!-- ตัวเลือกตัวละคร Roblox Avatar (Noob / Bacon / Girl) -->
+        <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-300">
+          <span class="text-xs font-bold text-slate-600 px-1.5 hidden sm:inline">ตัวละคร:</span>
+          <button id="avatar-btn-noob" onclick="selectAvatar('noob')" class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer bg-amber-400 text-slate-900 shadow-sm">
+            🟡 Noob
+          </button>
+          <button id="avatar-btn-bacon" onclick="selectAvatar('bacon')" class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer text-slate-600 hover:bg-white">
+            🟤 Bacon
+          </button>
+          <button id="avatar-btn-girl" onclick="selectAvatar('girl')" class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer text-slate-600 hover:bg-white">
+            🩷 Girl
+          </button>
+        </div>
+      </div>
+
+      <!-- กระดานตาราง 5 แถว x 8 คอลัมน์ สไตล์สนามแข่ง Roblox Baseplate -->
+      <div class="w-full bg-slate-800 p-2 sm:p-2.5 rounded-2xl shadow-2xl border-4 border-slate-700 relative">
+        <div id="grid-wrapper" class="relative w-full aspect-[8/5] bg-emerald-100 overflow-hidden rounded-xl border-2 border-slate-600">
+          <!-- ช่องตาราง 40 ช่อง -->
+          <div id="grid-cells" class="grid grid-cols-8 grid-rows-5 w-full h-full"></div>
+          
+          <!-- เลเยอร์สำหรับวางเหรียญ Robux, บล็อกลาวา และซอมบี้ -->
+          <div id="items-layer" class="absolute inset-0 pointer-events-none"></div>
+
+          <!-- เลเยอร์ตัวละครผู้เล่นสไตล์ Roblox Blocky Avatar -->
+          <div id="player-sprite" class="absolute pointer-events-none flex items-center justify-center z-20" style="width: 12.5%; height: 20%; left: 0%; top: 80%;">
+            <div id="player-rotator" class="relative w-full h-full flex items-center justify-center">
+              <!-- ลูกศรชี้ทิศทางด้านหน้าตัวละคร (สีเขียวนีออน Roblox ชัดเจน) -->
+              <div class="absolute -right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 sm:w-6 sm:h-6 bg-[#00b06f] border-2 border-white rounded-md flex items-center justify-center shadow-lg z-30">
+                <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </div>
+              <!-- พื้นที่วาด SVG ตัวละคร Blocky Avatar -->
+              <div id="avatar-svg-container" class="w-[84%] h-[84%] flex items-center justify-center drop-shadow-md"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- แผงควบคุมด้านล่าง (ปุ่มเริ่ม Play สีเขียว Roblox + ปุ่มคำสั่ง เดิน / หันซ้าย / หันขวา + ปุ่มลบ) -->
+      <div class="w-full flex flex-wrap items-center justify-between gap-2 sm:gap-3 pt-1">
+        
+        <!-- ปุ่มเริ่ม / หยุด สไตล์ปุ่ม Play สีเขียวเอกลักษณ์ของ Roblox -->
+        <button id="btn-run" onclick="toggleRun()" class="game-btn flex-1 min-w-[130px] sm:min-w-[165px] h-16 sm:h-20 bg-[#00b06f] hover:bg-[#00c47c] text-white rounded-2xl border-4 border-white shadow-[0_6px_0_#007a4d] flex items-center justify-center gap-2 px-4 cursor-pointer">
+          <span id="run-icon" class="text-2xl sm:text-3xl">▶</span>
+          <span id="run-text" class="text-2xl sm:text-3xl font-black tracking-wide">เริ่ม</span>
+        </button>
+
+        <!-- กลุ่มปุ่มคำสั่งหลัก: เดิน, หันซ้าย, หันขวา -->
+        <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap justify-center">
+          <!-- ปุ่ม เดิน -->
+          <button id="btn-move" onclick="addCommand('MOVE')" class="game-btn w-20 sm:w-24 h-16 sm:h-20 bg-white hover:bg-emerald-50 rounded-2xl border-4 border-[#00b06f] shadow-[0_5px_0_#007a4d] flex flex-col items-center justify-center cursor-pointer">
+            <svg class="w-8 h-8 sm:w-9 sm:h-9 text-[#00b06f]" viewBox="0 0 36 36" fill="currentColor">
+              <path d="M6 14h14V8l12 10-12 10v-6H6z"/>
+            </svg>
+            <span class="text-base sm:text-lg font-extrabold text-slate-800 leading-tight">เดิน</span>
+          </button>
+
+          <!-- ปุ่ม หันซ้าย -->
+          <button id="btn-left" onclick="addCommand('LEFT')" class="game-btn w-20 sm:w-24 h-16 sm:h-20 bg-white hover:bg-sky-50 rounded-2xl border-4 border-sky-500 shadow-[0_5px_0_#0369a1] flex flex-col items-center justify-center cursor-pointer">
+            <svg class="w-8 h-8 sm:w-9 sm:h-9 text-sky-500" viewBox="0 0 36 36" fill="currentColor">
+              <path d="M14 6L4 14l10 8v-5h8c2.2 0 4 1.8 4 4v9h6v-9c0-5.5-4.5-10-10-10h-8V6z"/>
+            </svg>
+            <span class="text-base sm:text-lg font-extrabold text-slate-800 leading-tight">หันซ้าย</span>
+          </button>
+
+          <!-- ปุ่ม หันขวา -->
+          <button id="btn-right" onclick="addCommand('RIGHT')" class="game-btn w-20 sm:w-24 h-16 sm:h-20 bg-white hover:bg-amber-50 rounded-2xl border-4 border-amber-500 shadow-[0_5px_0_#b45309] flex flex-col items-center justify-center cursor-pointer">
+            <svg class="w-8 h-8 sm:w-9 sm:h-9 text-amber-500" viewBox="0 0 36 36" fill="currentColor">
+              <path d="M22 6l10 8-10 8v-5h-8c-2.2 0-4 1.8-4 4v9H4v-9c0-5.5 4.5-10 10-10h8V6z"/>
+            </svg>
+            <span class="text-base sm:text-lg font-extrabold text-slate-800 leading-tight">หันขวา</span>
+          </button>
+        </div>
+
+        <!-- ปุ่มลบทีละช่อง & ล้างทั้งหมด -->
+        <div class="flex lg:flex-col gap-1.5">
+          <button id="btn-undo" onclick="undoCommand()" class="game-btn px-3 py-1.5 sm:py-2 bg-amber-400 hover:bg-amber-300 text-amber-950 font-extrabold text-xs sm:text-sm rounded-xl border-2 border-white shadow-[0_3px_0_#b45309] cursor-pointer" title="ลบคำสั่งล่าสุด">
+            ⌫ ลบ 1 ช่อง
+          </button>
+          <button id="btn-clear" onclick="clearCommands()" class="game-btn px-3 py-1.5 sm:py-2 bg-rose-500 hover:bg-rose-400 text-white font-extrabold text-xs sm:text-sm rounded-xl border-2 border-white shadow-[0_3px_0_#9f1239] cursor-pointer" title="ล้างคำสั่งทั้งหมด">
+            🗑️ ล้างหมด
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ฝั่งขวา: แผงลำดับคำสั่ง (Sequence Slots 1 - 18) สไตล์ Roblox Script Panel -->
+    <aside class="w-full lg:w-[34%] bg-slate-900/90 backdrop-blur-md p-3 sm:p-4 rounded-2xl shadow-2xl border-4 border-slate-700 flex flex-col">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-extrabold text-white text-sm sm:text-base flex items-center gap-1.5">
+          <span>📜 สคริปต์คำสั่ง (1–18)</span>
+        </h2>
+        <span class="text-xs font-semibold text-emerald-300 bg-slate-800 px-2 py-0.5 rounded-full border border-slate-600">แตะช่องเพื่อลบ</span>
+      </div>
+
+      <!-- ตารางช่องคำสั่ง 18 ช่อง -->
+      <div id="sequence-slots" class="grid grid-cols-6 lg:grid-cols-3 gap-2 sm:gap-2.5 flex-1">
+        <!-- สร้างช่อง 1-18 ด้วย JavaScript -->
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- หน้าต่างแจ้งเตือน / สรุปผลระหว่างด่าน (Modal) -->
+  <div id="game-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 text-center shadow-2xl border-4 border-slate-800 transform transition-all scale-100">
+      <div id="modal-emoji" class="text-6xl mb-3">🏆</div>
+      <h3 id="modal-title" class="text-2xl sm:text-3xl font-black text-slate-900 mb-2">ผ่านด่าน Obby แล้ว!</h3>
+      <div id="modal-stars" class="text-3xl mb-3 hidden">⭐⭐⭐</div>
+      <p id="modal-message" class="text-base sm:text-lg text-slate-600 mb-6 font-medium">หนูเขียนสคริปต์เก็บ Robux ได้สำเร็จ!</p>
+      
+      <div id="modal-actions" class="flex flex-wrap items-center justify-center gap-3">
+        <!-- ปุ่มใน Modal จะถูกสร้างตามสถานการณ์ -->
+      </div>
+    </div>
+  </div>
+
+  <!-- หน้าต่างสรุปผลการเล่นตอนจบเกมสไตล์ Roblox Victory Leaderboard -->
+  <div id="final-summary-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md hidden items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-slate-900 text-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border-4 border-amber-400 relative my-auto">
+      
+      <!-- แถบหัวข้อ Victory / Game Over -->
+      <div class="text-center mb-4">
+        <div id="summary-banner-badge" class="inline-block px-4 py-1 rounded-full bg-amber-400 text-slate-950 font-black text-xs sm:text-sm tracking-wider uppercase mb-1 shadow">
+          MISSION COMPLETE • ROBLOX OBBY
+        </div>
+        <h2 id="summary-main-title" class="text-2xl sm:text-3xl font-black text-white tracking-wide">
+          🏆 สรุปผลการผจญภัย!
+        </h2>
+      </div>
+
+      <!-- การ์ดตัวละครและยศรางวัล (Rank Badge) -->
+      <div class="bg-slate-800/90 rounded-2xl p-3.5 border-2 border-slate-700 flex items-center gap-4 mb-4">
+        <div class="w-16 h-16 sm:w-20 sm:h-20 bg-emerald-200 rounded-2xl border-2 border-white flex items-center justify-center p-2 shrink-0 shadow-inner">
+          <div id="summary-avatar-preview" class="w-full h-full"></div>
+        </div>
+        <div class="flex-1 text-left">
+          <div id="summary-student-info" class="text-sm font-black text-sky-300">นักเรียน: - (ชั้น ป.2 เลขที่ -)</div>
+          <div class="text-xs text-slate-400 font-bold">ตัวละคร: <span id="summary-avatar-name" class="text-white">Noob (ตัวละครคลาสสิก)</span></div>
+          <div id="summary-rank-title" class="text-base sm:text-lg font-black text-amber-300 leading-tight mt-0.5">
+            ปรมาจารย์โค้ดดิ้ง Roblox
+          </div>
+          <div id="summary-rank-stars" class="text-lg sm:text-xl mt-0.5 tracking-widest">⭐⭐⭐</div>
+        </div>
+      </div>
+
+      <!-- ตารางสถิติ 4 ช่อง (Robux, เวลารวม, จำนวนคำสั่ง, โบนัส) -->
+      <div class="grid grid-cols-2 gap-2.5 mb-4">
+        <div class="bg-slate-800 p-3 rounded-2xl border border-slate-700 flex flex-col items-center">
+          <span class="text-xs text-slate-400 font-bold">เหรียญ Robux สะสม</span>
+          <span id="summary-robux" class="text-xl sm:text-2xl font-black text-amber-400 mt-0.5">R$ 0 / 12</span>
+        </div>
+        <div class="bg-slate-800 p-3 rounded-2xl border border-slate-700 flex flex-col items-center">
+          <span class="text-xs text-slate-400 font-bold">เวลารวมทั้งหมด</span>
+          <span id="summary-time" class="text-xl sm:text-2xl font-mono font-black text-sky-400 mt-0.5">00:00</span>
+        </div>
+        <div class="bg-slate-800 p-3 rounded-2xl border border-slate-700 flex flex-col items-center">
+          <span class="text-xs text-slate-400 font-bold">บล็อกคำสั่งที่ใช้</span>
+          <span id="summary-blocks" class="text-xl sm:text-2xl font-black text-emerald-400 mt-0.5">0 บล็อก</span>
+        </div>
+        <div class="bg-slate-800 p-3 rounded-2xl border border-slate-700 flex flex-col items-center">
+          <span class="text-xs text-slate-400 font-bold">โบนัสความเร็ว & แม่นยำ</span>
+          <span id="summary-bonus" class="text-xl sm:text-2xl font-black text-pink-400 mt-0.5">+0</span>
+        </div>
+      </div>
+
+      <!-- กล่องคะแนนรวมสุทธิ (Total Score) -->
+      <div class="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-3.5 border-2 border-emerald-300 text-center mb-4 shadow-lg">
+        <div class="text-xs sm:text-sm font-extrabold text-emerald-100 uppercase tracking-wider">คะแนนรวมสุทธิ (TOTAL SCORE)</div>
+        <div id="summary-total-score" class="text-3xl sm:text-4xl font-black text-white drop-shadow mt-0.5">0 คะแนน</div>
+      </div>
+
+      <!-- ปุ่มดาวน์โหลดเกียรติบัตร & ปุ่มเล่นใหม่อีกครั้ง -->
+      <div class="flex flex-col sm:flex-row gap-2.5">
+        <button onclick="downloadCertificate()" class="game-btn flex-1 py-3.5 bg-amber-400 hover:bg-amber-300 text-slate-950 rounded-2xl border-4 border-white shadow-[0_6px_0_#b45309] font-black text-base sm:text-lg tracking-wide flex items-center justify-center gap-2 cursor-pointer">
+          <span>🏅 ดาวน์โหลดเกียรติบัตร</span>
+        </button>
+        <button onclick="restartWholeGame()" class="game-btn flex-1 py-3.5 bg-[#00b06f] hover:bg-[#00c47c] text-white rounded-2xl border-4 border-white shadow-[0_6px_0_#007a4d] font-black text-base sm:text-lg tracking-wide flex items-center justify-center gap-2 cursor-pointer">
+          <span>🔄 เล่นใหม่อีกครั้ง</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    /**
+     * ==========================================
+     * ระบบเสียงสังเคราะห์จริง (Web Audio API Sound Synthesizer)
+     * สร้างเสียงเอฟเฟกต์เกมโดยไม่ต้องพึ่งไฟล์เสียงภายนอก
+     * ==========================================
+     */
+    let isSoundEnabled = true;
+    let audioCtx = null;
+
+    function getAudioCtx() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          audioCtx = new AudioContextClass();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playTone(freq, type, duration, gainVal = 0.15, slideToFreq = null, delay = 0) {
+      if (!isSoundEnabled) return;
+      try {
+        const ctx = getAudioCtx();
+        if (!ctx) return;
+        const startTime = ctx.currentTime + delay;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, startTime);
+        if (slideToFreq) {
+          osc.frequency.exponentialRampToValueAtTime(slideToFreq, startTime + duration);
+        }
+
+        gain.gain.setValueAtTime(gainVal, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      } catch (e) {
+        // ป้องกันข้อผิดพลาดหากเบราว์เซอร์บล็อกเสียงก่อนการโต้ตอบ
+      }
+    }
+
+    const sfx = {
+      click: () => playTone(620, 'sine', 0.08, 0.14, 820),
+      delete: () => playTone(380, 'triangle', 0.1, 0.14, 220),
+      step: () => playTone(260, 'triangle', 0.09, 0.16, 340),
+      turn: () => playTone(440, 'sine', 0.11, 0.13, 560),
+      coin: () => {
+        // เสียงเก็บเหรียญ Robux สดใส 2 จังหวะ
+        playTone(987.77, 'sine', 0.1, 0.18, null, 0);      // B5
+        playTone(1318.51, 'sine', 0.25, 0.2, null, 0.08);   // E6
+      },
+      bump: () => {
+        // เสียงชนลาวา/ซอมบี้ (เสียงทุ้มต่ำ)
+        playTone(160, 'sawtooth', 0.25, 0.2, 65, 0);
+      },
+      win: () => {
+        // เสียงแฟนแฟร์ผ่านด่าน (C5 - E5 - G5 - C6)
+        playTone(523.25, 'triangle', 0.14, 0.18, null, 0);
+        playTone(659.25, 'triangle', 0.14, 0.18, null, 0.11);
+        playTone(783.99, 'triangle', 0.14, 0.18, null, 0.22);
+        playTone(1046.50, 'triangle', 0.38, 0.22, null, 0.33);
+      }
+    };
+
+    function toggleSound() {
+      isSoundEnabled = !isSoundEnabled;
+      document.getElementById('sound-icon').textContent = isSoundEnabled ? '🔊' : '🔇';
+      if (isSoundEnabled) sfx.click();
+    }
+
+    /**
+     * ==========================================
+     * ข้อมูลนักเรียน (Student Profile)
+     * ==========================================
+     */
+    let studentInfo = {
+      name: 'นักเรียน ป.2',
+      className: 'ป.2/1',
+      number: '1'
+    };
+
+    function selectLoginAvatar(type) {
+      sfx.click();
+      selectAvatar(type);
+      ['noob', 'bacon', 'girl'].forEach(t => {
+        const btn = document.getElementById(`login-avatar-${t}`);
+        if (t === type) {
+          btn.className = 'p-2 rounded-xl border-2 border-amber-400 bg-amber-50 flex flex-col items-center gap-1 cursor-pointer transition scale-105 shadow-sm';
+        } else {
+          btn.className = 'p-2 rounded-xl border-2 border-slate-200 bg-slate-50 flex flex-col items-center gap-1 cursor-pointer transition opacity-75 hover:opacity-100';
+        }
+      });
+    }
+
+    function openStudentLogin() {
+      if (isRunning) return;
+      sfx.click();
+      pauseLevelTimer();
+      document.getElementById('student-login-modal').classList.remove('hidden');
+      document.getElementById('student-login-modal').classList.add('flex');
+    }
+
+    function handleStudentStart(e) {
+      e.preventDefault();
+      getAudioCtx();
+      sfx.win();
+
+      const nameVal = document.getElementById('input-student-name').value.trim();
+      const classVal = document.getElementById('input-student-class').value;
+      const noVal = document.getElementById('input-student-no').value.trim();
+
+      studentInfo = {
+        name: nameVal || 'นักเรียน ป.2',
+        className: classVal || 'ป.2',
+        number: noVal || '-'
+      };
+
+      document.getElementById('hud-student-badge').textContent = `👤 ${studentInfo.name} (${studentInfo.className} เลขที่ ${studentInfo.number})`;
+
+      const loginModal = document.getElementById('student-login-modal');
+      loginModal.classList.add('hidden');
+      loginModal.classList.remove('flex');
+
+      // รีเซ็ตเวลาเริ่มด่าน 1 ใหม่หลังจากลงทะเบียนเสร็จ
+      levelElapsedSec = 0;
+      updateTimerUI();
+      startLevelTimer();
+    }
+
+    /**
+     * ==========================================
+     * ข้อมูลด่านทั้ง 10 ด่านสไตล์ Roblox Obby (ตาราง 5x8)
+     * อุปสรรคมีทั้ง 'lava' (บล็อกลาวาเรืองแสง) และ 'zombie' (ซอมบี้บล็อกเหลี่ยม)
+     * ==========================================
+     */
+    const LEVELS = [
+      {
+        id: 1,
+        title: "ด่านที่ 1: สนามฝึก Obby เริ่มต้น",
+        hint: "เดินหลบบล็อกลาวาและซอมบี้ เพื่อไปเก็บเหรียญ Robux!",
+        targetTime: 25,
+        start: { row: 4, col: 0, dir: 0 },
+        coins: [
+          { row: 2, col: 3 }
+        ],
+        obstacles: [
+          { row: 3, col: 2, type: 'lava' },
+          { row: 4, col: 6, type: 'zombie' }
+        ]
+      },
+      {
+        id: 2,
+        title: "ด่านที่ 2: สะพานลาวาเดือด",
+        hint: "เก็บเหรียญ Robux ให้ครบทั้ง 2 ชิ้น ระวังตกบ่อลาวานะ!",
+        targetTime: 35,
+        start: { row: 4, col: 0, dir: 0 },
+        coins: [
+          { row: 4, col: 3 },
+          { row: 2, col: 5 }
+        ],
+        obstacles: [
+          { row: 3, col: 3, type: 'lava' },
+          { row: 2, col: 2, type: 'lava' },
+          { row: 4, col: 6, type: 'zombie' }
+        ]
+      },
+      {
+        id: 3,
+        title: "ด่านที่ 3: ทางเดินซิกแซกซอมบี้",
+        hint: "ฝึกใช้ปุ่ม 'หันซ้าย' และ 'หันขวา' อ้อมสิ่งกีดขวาง",
+        targetTime: 40,
+        start: { row: 4, col: 1, dir: 3 }, // หันขึ้น
+        coins: [
+          { row: 2, col: 1 },
+          { row: 2, col: 4 },
+          { row: 0, col: 4 }
+        ],
+        obstacles: [
+          { row: 1, col: 1, type: 'zombie' },
+          { row: 3, col: 3, type: 'lava' },
+          { row: 1, col: 5, type: 'lava' }
+        ]
+      },
+      {
+        id: 4,
+        title: "ด่านที่ 4: ป้อมปราการลาวา & ซอมบี้",
+        hint: "วางแผนเขียนสคริปต์เก็บ Robux ทั้ง 3 เหรียญ",
+        targetTime: 45,
+        start: { row: 0, col: 0, dir: 0 },
+        coins: [
+          { row: 0, col: 4 },
+          { row: 3, col: 4 },
+          { row: 3, col: 7 }
+        ],
+        obstacles: [
+          { row: 1, col: 1, type: 'lava' },
+          { row: 1, col: 2, type: 'lava' },
+          { row: 2, col: 5, type: 'zombie' },
+          { row: 4, col: 3, type: 'zombie' }
+        ]
+      },
+      {
+        id: 5,
+        title: "ด่านที่ 5: หุบเขาลาวาคู่",
+        hint: "เลี้ยวขึ้นหลบแนวลาวาแล้วเดินเก็บ Robux ให้ครบทั้ง 3 ชิ้น",
+        targetTime: 45,
+        start: { row: 4, col: 0, dir: 0 },
+        coins: [
+          { row: 4, col: 4 },
+          { row: 1, col: 4 },
+          { row: 1, col: 7 }
+        ],
+        obstacles: [
+          { row: 3, col: 1, type: 'lava' },
+          { row: 3, col: 2, type: 'lava' },
+          { row: 2, col: 5, type: 'zombie' },
+          { row: 0, col: 3, type: 'lava' },
+          { row: 3, col: 6, type: 'zombie' }
+        ]
+      },
+      {
+        id: 6,
+        title: "ด่านที่ 6: เขาวงกตบล็อกเขียวมรกต",
+        hint: "เดินทางเป็นรูปตัว U อ้อมกำแพงลาวาตรงกลางสนาม",
+        targetTime: 50,
+        start: { row: 0, col: 1, dir: 1 }, // หันลง
+        coins: [
+          { row: 3, col: 1 },
+          { row: 3, col: 5 },
+          { row: 1, col: 5 }
+        ],
+        obstacles: [
+          { row: 1, col: 3, type: 'lava' },
+          { row: 2, col: 3, type: 'lava' },
+          { row: 4, col: 3, type: 'zombie' },
+          { row: 0, col: 6, type: 'zombie' }
+        ]
+      },
+      {
+        id: 7,
+        title: "ด่านที่ 7: สะพานลอยฟ้าท้าความกล้า",
+        hint: "เดินไต่ระดับขึ้นด้านบน ระวังซอมบี้ดักรอตามทางแยก!",
+        targetTime: 50,
+        start: { row: 4, col: 0, dir: 0 },
+        coins: [
+          { row: 4, col: 2 },
+          { row: 2, col: 2 },
+          { row: 2, col: 6 },
+          { row: 0, col: 6 }
+        ],
+        obstacles: [
+          { row: 3, col: 3, type: 'zombie' },
+          { row: 1, col: 1, type: 'lava' },
+          { row: 1, col: 4, type: 'lava' },
+          { row: 3, col: 7, type: 'zombie' }
+        ]
+      },
+      {
+        id: 8,
+        title: "ด่านที่ 8: ฐานทัพซอมบี้จอมป่วน",
+        hint: "หาเส้นทางที่สั้นที่สุดเพื่อเก็บ Robux ทั้ง 4 เหรียญ",
+        targetTime: 55,
+        start: { row: 2, col: 0, dir: 0 }, // หันขวา
+        coins: [
+          { row: 2, col: 2 },
+          { row: 0, col: 2 },
+          { row: 0, col: 6 },
+          { row: 3, col: 6 }
+        ],
+        obstacles: [
+          { row: 1, col: 3, type: 'zombie' },
+          { row: 2, col: 4, type: 'lava' },
+          { row: 3, col: 1, type: 'lava' },
+          { row: 4, col: 5, type: 'zombie' }
+        ]
+      },
+      {
+        id: 9,
+        title: "ด่านที่ 9: วงเวียนลาวาเดือด",
+        hint: "วางแผนการหมุนซ้าย-ขวาให้แม่นยำ อย่าให้เกิน 18 บล็อกคำสั่ง!",
+        targetTime: 55,
+        start: { row: 4, col: 7, dir: 2 }, // หันซ้ายจากมุมขวาล่าง
+        coins: [
+          { row: 4, col: 4 },
+          { row: 1, col: 4 },
+          { row: 1, col: 1 }
+        ],
+        obstacles: [
+          { row: 3, col: 6, type: 'lava' },
+          { row: 3, col: 5, type: 'zombie' },
+          { row: 2, col: 2, type: 'lava' },
+          { row: 0, col: 3, type: 'zombie' }
+        ]
+      },
+      {
+        id: 10,
+        title: "ด่านที่ 10: ราชาแห่ง Roblox Obby ป.2",
+        hint: "ด่านสุดท้ายสุดท้าทาย! พิชิต Robux ทั้ง 4 เหรียญเพื่อคว้าแชมป์",
+        targetTime: 60,
+        start: { row: 0, col: 0, dir: 1 }, // หันลงจากมุมซ้ายบน
+        coins: [
+          { row: 3, col: 0 },
+          { row: 3, col: 3 },
+          { row: 1, col: 3 },
+          { row: 1, col: 7 }
+        ],
+        obstacles: [
+          { row: 1, col: 1, type: 'lava' },
+          { row: 2, col: 1, type: 'zombie' },
+          { row: 4, col: 2, type: 'lava' },
+          { row: 2, col: 5, type: 'lava' },
+          { row: 0, col: 6, type: 'zombie' }
+        ]
+      }
+    ];
+
+    /**
+     * ==========================================
+     * สถานะของเกม (Game State & Stats)
+     * ==========================================
+     */
+    const ROWS = 5;
+    const COLS = 8;
+    const MAX_SLOTS = 18;
+
+    let currentLevelIdx = 0;
+    let currentAvatar = 'noob'; // 'noob' | 'bacon' | 'girl'
+    let hearts = 3;
+    let commands = [];
+    let isRunning = false;
+    let runTimer = null;
+
+    let playerPos = { row: 4, col: 0, dir: 0 };
+    let visualRotation = 0;
+    let collectedCoinKeys = new Set();
+
+    // ตัวแปรระบบจับเวลาและสถิติรวมตลอดการเล่น
+    let levelElapsedSec = 0;
+    let timerInterval = null;
+    let isTimerActive = false;
+
+    let sessionStats = {
+      completedLevels: new Set(),
+      totalRobuxCollected: 0,
+      totalTimeSec: 0,
+      totalBlocksUsed: 0,
+      speedBonusTotal: 0,
+      accuracyBonusTotal: 0
+    };
+
+    /**
+     * ==========================================
+     * ระบบจับเวลา (Timer & Speed Challenge)
+     * ==========================================
+     */
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60).toString().padStart(2, '0');
+      const s = (sec % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function startLevelTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      isTimerActive = true;
+      timerInterval = setInterval(() => {
+        if (!isTimerActive) return;
+        levelElapsedSec++;
+        updateTimerUI();
+      }, 1000);
+    }
+
+    function pauseLevelTimer() {
+      isTimerActive = false;
+    }
+
+    function resumeLevelTimer() {
+      if (!isRunning) {
+        isTimerActive = true;
+      }
+    }
+
+    function updateTimerUI() {
+      const lvl = LEVELS[currentLevelIdx];
+      const target = lvl.targetTime;
+      document.getElementById('level-timer').textContent = formatTime(levelElapsedSec);
+      document.getElementById('target-time-text').textContent = target;
+      document.getElementById('total-timer-text').textContent = formatTime(sessionStats.totalTimeSec + levelElapsedSec);
+
+      const badge = document.getElementById('speed-badge');
+      if (levelElapsedSec <= target) {
+        badge.textContent = '⚡ โบนัสเต็ม';
+        badge.className = 'text-[10px] sm:text-xs font-extrabold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/50';
+      } else if (levelElapsedSec <= target + 20) {
+        badge.textContent = '⏱️ โบนัสครึ่ง';
+        badge.className = 'text-[10px] sm:text-xs font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/50';
+      } else {
+        badge.textContent = '🐢 เกินเวลาเป้า';
+        badge.className = 'text-[10px] sm:text-xs font-extrabold px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 border border-slate-500';
+      }
+    }
+
+    function restartWholeGame() {
+      sfx.click();
+      closeFinalSummary();
+      sessionStats = {
+        completedLevels: new Set(),
+        totalRobuxCollected: 0,
+        totalTimeSec: 0,
+        totalBlocksUsed: 0,
+        speedBonusTotal: 0,
+        accuracyBonusTotal: 0
+      };
+      loadLevel(0);
+    }
+
+    // สร้างช่องตาราง 5x8 สไตล์พื้นบล็อกหญ้า/ตัวต่อ Roblox (สลับสีเขียวอ่อน-เข้มแบบตารางหมากรุก)
+    function buildGridCells() {
+      const grid = document.getElementById('grid-cells');
+      grid.innerHTML = '';
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const isEven = (r + c) % 2 === 0;
+          const cell = document.createElement('div');
+          cell.className = `border border-emerald-700/30 roblox-studs transition-colors ${
+            isEven ? 'bg-emerald-200/90' : 'bg-emerald-300/80'
+          }`;
+          grid.appendChild(cell);
+        }
+      }
+    }
+
+    // เลือกเปลี่ยนตัวละคร Roblox Avatar (Noob / Bacon / Girl)
+    function selectAvatar(type) {
+      if (isRunning) return;
+      sfx.click();
+      currentAvatar = type;
+
+      ['noob', 'bacon', 'girl'].forEach(t => {
+        const btn = document.getElementById(`avatar-btn-${t}`);
+        if (t === type) {
+          btn.className = 'px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer bg-amber-400 text-slate-900 shadow-sm scale-105';
+        } else {
+          btn.className = 'px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer text-slate-600 hover:bg-white';
+        }
+      });
+
+      renderAvatarGraphic();
+    }
+
+    // วาดตัวละครสไตล์หัวเหลี่ยม Blocky Avatar (มุมมองด้านบนกึ่งเฉียงเพื่อให้เห็นทิศทางการหันหน้าชัดเจน)
+    function getAvatarSvgHtml(avatarType) {
+      if (avatarType === 'noob') {
+        // ตัวละคร Noob ในตำนาน: หัวเหลือง แขนเหลือง เสื้อสีฟ้า กางเกงสีเขียว
+        return `
+          <svg class="w-full h-full" viewBox="0 0 100 100">
+            <!-- แขนเหลี่ยมสีเหลืองซ้าย-ขวา -->
+            <rect x="34" y="10" width="26" height="16" rx="4" fill="#facc15" stroke="#854d0e" stroke-width="3"/>
+            <rect x="34" y="74" width="26" height="16" rx="4" fill="#facc15" stroke="#854d0e" stroke-width="3"/>
+            <!-- ลำตัวเสื้อสีฟ้า Roblox Blue -->
+            <rect x="28" y="24" width="40" height="52" rx="6" fill="#0284c7" stroke="#0c4a6e" stroke-width="3"/>
+            <!-- ขากางเกงสีเขียวโผล่ด้านหน้าเวลาเดิน -->
+            <rect x="64" y="28" width="12" height="18" rx="3" fill="#22c55e" stroke="#14532d" stroke-width="2.5"/>
+            <rect x="64" y="54" width="12" height="18" rx="3" fill="#22c55e" stroke="#14532d" stroke-width="2.5"/>
+            <!-- หัวเหลี่ยมสีเหลือง (หันหน้าไปทางขวา) -->
+            <rect x="26" y="28" width="44" height="44" rx="8" fill="#fde047" stroke="#854d0e" stroke-width="3"/>
+            <!-- ใบหน้าคลาสสิก Roblox Smile (หันขวา) -->
+            <circle cx="58" cy="41" r="3.5" fill="#1e293b"/>
+            <circle cx="58" cy="59" r="3.5" fill="#1e293b"/>
+            <path d="M 62 43 Q 68 50 62 57" stroke="#1e293b" stroke-width="3" fill="none" stroke-linecap="round"/>
+          </svg>
+        `;
+      } else if (avatarType === 'bacon') {
+        // ตัวละคร Bacon Hair: ผมสีน้ำตาลหยัก เสื้อแจ็กเก็ตดำ กางเกงยีนส์น้ำเงิน
+        return `
+          <svg class="w-full h-full" viewBox="0 0 100 100">
+            <!-- แขนสีเนื้อ -->
+            <rect x="34" y="10" width="26" height="16" rx="4" fill="#fed7aa" stroke="#7c2d12" stroke-width="3"/>
+            <rect x="34" y="74" width="26" height="16" rx="4" fill="#fed7aa" stroke="#7c2d12" stroke-width="3"/>
+            <!-- เสื้อแจ็กเก็ตสีดำ -->
+            <rect x="28" y="24" width="40" height="52" rx="6" fill="#334155" stroke="#0f172a" stroke-width="3"/>
+            <!-- กางเกงยีนส์ -->
+            <rect x="64" y="28" width="12" height="18" rx="3" fill="#2563eb" stroke="#1e3a8a" stroke-width="2.5"/>
+            <rect x="64" y="54" width="12" height="18" rx="3" fill="#2563eb" stroke="#1e3a8a" stroke-width="2.5"/>
+            <!-- หัวเหลี่ยม -->
+            <rect x="26" y="28" width="44" height="44" rx="8" fill="#fed7aa" stroke="#7c2d12" stroke-width="3"/>
+            <!-- ผม Bacon สีน้ำตาลด้านหลังและด้านข้าง -->
+            <path d="M 24 26 L 46 26 L 42 36 L 48 44 L 40 50 L 48 56 L 42 64 L 46 74 L 24 74 Z" fill="#78350f" stroke="#451a03" stroke-width="2.5"/>
+            <!-- หน้าตาเท่ๆ -->
+            <circle cx="58" cy="41" r="3.5" fill="#1e293b"/>
+            <circle cx="58" cy="59" r="3.5" fill="#1e293b"/>
+            <path d="M 62 44 Q 67 50 62 56" stroke="#1e293b" stroke-width="3" fill="none" stroke-linecap="round"/>
+          </svg>
+        `;
+      } else {
+        // ตัวละคร Girl Avatar: ผมยาวสีน้ำตาลติดกิ๊บชมพู เสื้อสีชมพูสดใส
+        return `
+          <svg class="w-full h-full" viewBox="0 0 100 100">
+            <!-- แขน -->
+            <rect x="34" y="10" width="26" height="16" rx="4" fill="#fde68a" stroke="#92400e" stroke-width="3"/>
+            <rect x="34" y="74" width="26" height="16" rx="4" fill="#fde68a" stroke="#92400e" stroke-width="3"/>
+            <!-- เสื้อสีชมพู -->
+            <rect x="28" y="24" width="40" height="52" rx="6" fill="#ec4899" stroke="#831843" stroke-width="3"/>
+            <!-- กางเกงสีม่วง -->
+            <rect x="64" y="28" width="12" height="18" rx="3" fill="#8b5cf6" stroke="#4c1d95" stroke-width="2.5"/>
+            <rect x="64" y="54" width="12" height="18" rx="3" fill="#8b5cf6" stroke="#4c1d95" stroke-width="2.5"/>
+            <!-- ผมยาวสีน้ำตาลเข้ม -->
+            <rect x="18" y="22" width="42" height="56" rx="10" fill="#5c2d16" stroke="#291207" stroke-width="2.5"/>
+            <!-- หัวเหลี่ยม -->
+            <rect x="28" y="28" width="42" height="44" rx="8" fill="#fef3c7" stroke="#92400e" stroke-width="3"/>
+            <!-- กิ๊บติดผมสีชมพู -->
+            <rect x="44" y="22" width="10" height="8" rx="2" fill="#f472b6" stroke="#9d174d" stroke-width="1.5"/>
+            <!-- ตาและรอยยิ้ม -->
+            <circle cx="58" cy="41" r="3.5" fill="#1e293b"/>
+            <circle cx="58" cy="59" r="3.5" fill="#1e293b"/>
+            <circle cx="56" cy="36" r="2.5" fill="#fda4af"/>
+            <circle cx="56" cy="64" r="2.5" fill="#fda4af"/>
+            <path d="M 62 43 Q 68 50 62 57" stroke="#be185d" stroke-width="3" fill="none" stroke-linecap="round"/>
+          </svg>
+        `;
+      }
+    }
+
+    function renderAvatarGraphic() {
+      const container = document.getElementById('avatar-svg-container');
+      container.innerHTML = getAvatarSvgHtml(currentAvatar);
+    }
+
+    // สร้างช่องลำดับคำสั่ง 1 - 18 (จัดเรียง 1-6, 7-12, 13-18 บนจอใหญ่)
+    function buildSequenceSlots() {
+      const container = document.getElementById('sequence-slots');
+      container.innerHTML = '';
+
+      const desktopOrder = [];
+      for (let row = 0; row < 6; row++) {
+        for (let col = 0; col < 3; col++) {
+          desktopOrder.push(col * 6 + row);
+        }
+      }
+
+      const isLarge = window.innerWidth >= 1024;
+      const orderList = isLarge ? desktopOrder : Array.from({ length: 18 }, (_, i) => i);
+
+      orderList.forEach((slotIdx) => {
+        const slot = document.createElement('div');
+        slot.id = `slot-${slotIdx}`;
+        slot.onclick = () => removeCommandAt(slotIdx);
+        slot.className = 'relative aspect-[4/3] lg:aspect-auto lg:h-14 rounded-xl border-2 border-dashed border-slate-500 bg-slate-800/80 flex items-center justify-center cursor-pointer transition-all hover:bg-slate-700/80 select-none overflow-hidden';
+        slot.innerHTML = `<span class="text-xl sm:text-2xl font-black text-slate-500">${slotIdx + 1}</span>`;
+        container.appendChild(slot);
+      });
+    }
+
+    window.addEventListener('resize', () => {
+      buildSequenceSlots();
+      renderSequenceSlots();
+    });
+
+    // สร้างปุ่มเลือกด่าน 1 - 10
+    function buildLevelButtons() {
+      const container = document.getElementById('level-buttons');
+      container.innerHTML = '';
+      LEVELS.forEach((lvl, idx) => {
+        const btn = document.createElement('button');
+        btn.id = `lvl-btn-${idx}`;
+        btn.textContent = lvl.id;
+        btn.onclick = () => {
+          if (isRunning) return;
+          sfx.click();
+          loadLevel(idx);
+        };
+        btn.className = 'w-7 h-7 sm:w-8 sm:h-8 rounded-lg font-black text-xs sm:text-sm border-2 transition cursor-pointer';
+        container.appendChild(btn);
+      });
+    }
+
+    function updateLevelButtonsUI() {
+      LEVELS.forEach((_, idx) => {
+        const btn = document.getElementById(`lvl-btn-${idx}`);
+        if (idx === currentLevelIdx) {
+          btn.className = 'w-7 h-7 sm:w-8 sm:h-8 rounded-lg font-black text-xs sm:text-sm border-2 bg-[#00b06f] text-white border-white shadow-md scale-105 cursor-pointer';
+        } else {
+          btn.className = 'w-7 h-7 sm:w-8 sm:h-8 rounded-lg font-black text-xs sm:text-sm border-2 bg-slate-800 text-slate-300 border-slate-600 hover:bg-slate-700 cursor-pointer';
+        }
+      });
+    }
+
+    /**
+     * ==========================================
+     * โหลดด่านและรีเซ็ตตำแหน่งตัวละคร
+     * ==========================================
+     */
+    function loadLevel(idx) {
+      stopExecution();
+      currentLevelIdx = idx;
+      hearts = 3;
+      commands = [];
+      levelElapsedSec = 0;
+      
+      const lvl = LEVELS[currentLevelIdx];
+      document.getElementById('level-title').textContent = lvl.title;
+      document.getElementById('level-hint').textContent = lvl.hint;
+      
+      updateLevelButtonsUI();
+      updateHeartsUI();
+      renderSequenceSlots();
+      resetCharacterToStart();
+      updateTimerUI();
+      startLevelTimer();
+    }
+
+    function resetCurrentLevel() {
+      if (isRunning) return;
+      sfx.click();
+      loadLevel(currentLevelIdx);
+    }
+
+    function resetCharacterToStart() {
+      const lvl = LEVELS[currentLevelIdx];
+      playerPos = { ...lvl.start };
+      visualRotation = playerPos.dir * 90;
+      collectedCoinKeys.clear();
+      
+      updateCoinCounterUI();
+      renderItemsOnBoard();
+      updatePlayerVisual(true);
+    }
+
+    function updateHeartsUI() {
+      const container = document.getElementById('hearts-container');
+      container.innerHTML = '';
+      for (let i = 0; i < 3; i++) {
+        const active = i < hearts;
+        const heartSvg = document.createElement('span');
+        heartSvg.className = `text-lg sm:text-xl transition-transform ${active ? 'scale-100' : 'opacity-25 grayscale scale-90'}`;
+        heartSvg.textContent = '❤️';
+        container.appendChild(heartSvg);
+      }
+    }
+
+    function updateCoinCounterUI() {
+      const lvl = LEVELS[currentLevelIdx];
+      document.getElementById('coin-count').textContent = collectedCoinKeys.size;
+      document.getElementById('coin-total').textContent = lvl.coins.length;
+    }
+
+    // วาดเหรียญ Robux (R$), บล็อกลาวาเรืองแสง และซอมบี้บล็อกเหลี่ยมลงบนกระดาน
+    function renderItemsOnBoard() {
+      const layer = document.getElementById('items-layer');
+      layer.innerHTML = '';
+      const lvl = LEVELS[currentLevelIdx];
+
+      // 1. วาดเหรียญ Robux สีทอง
+      lvl.coins.forEach((coin) => {
+        const key = `${coin.row},${coin.col}`;
+        if (collectedCoinKeys.has(key)) return;
+
+        const el = document.createElement('div');
+        el.className = 'absolute flex items-center justify-center';
+        el.style.width = '12.5%';
+        el.style.height = '20%';
+        el.style.left = `${coin.col * 12.5}%`;
+        el.style.top = `${coin.row * 20}%`;
+        el.innerHTML = `
+          <svg class="w-[68%] h-[68%] robux-anim drop-shadow-md" viewBox="0 0 40 40">
+            <polygon points="20,2 36,11 36,29 20,38 4,29 4,11" fill="#fbbf24" stroke="#92400e" stroke-width="2.5"/>
+            <polygon points="20,6 32,13 32,27 20,34 8,27 8,13" fill="none" stroke="#fef08a" stroke-width="2"/>
+            <rect x="14" y="14" width="12" height="12" rx="2" fill="#78350f"/>
+            <rect x="17.5" y="17.5" width="5" height="5" fill="#fbbf24"/>
+          </svg>
+        `;
+        layer.appendChild(el);
+      });
+
+      // 2. วาดสิ่งกีดขวางสไตล์ Roblox Obby (บล็อกลาวา และ ซอมบี้บล็อก)
+      lvl.obstacles.forEach((obs) => {
+        const el = document.createElement('div');
+        el.className = 'absolute flex items-center justify-center p-1';
+        el.style.width = '12.5%';
+        el.style.height = '20%';
+        el.style.left = `${obs.col * 12.5}%`;
+        el.style.top = `${obs.row * 20}%`;
+
+        if (obs.type === 'lava') {
+          // บล็อกลาวาเรืองแสง (Lava Kill Brick)
+          el.innerHTML = `
+            <div class="w-[88%] h-[88%] rounded-lg bg-gradient-to-br from-red-600 via-orange-500 to-yellow-400 border-2 border-red-900 lava-anim flex items-center justify-center relative overflow-hidden shadow-inner">
+              <!-- รอยแตกลาวา -->
+              <svg class="w-full h-full opacity-80" viewBox="0 0 60 60">
+                <path d="M5 15 L25 22 L40 10 L55 18" stroke="#fef08a" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <path d="M10 42 L30 35 L50 46" stroke="#fef08a" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <circle cx="20" cy="28" r="3" fill="#fff"/>
+                <circle cx="42" cy="26" r="2.5" fill="#fff"/>
+              </svg>
+              <span class="absolute bottom-0.5 text-[9px] font-black text-white bg-red-900/70 px-1 rounded">LAVA</span>
+            </div>
+          `;
+        } else {
+          // ซอมบี้บล็อกเหลี่ยม (Roblox Blocky Zombie)
+          el.innerHTML = `
+            <svg class="w-[84%] h-[84%] zombie-anim drop-shadow-md" viewBox="0 0 100 100">
+              <!-- แขนสีเขียวยื่นไปข้างหน้า -->
+              <rect x="16" y="14" width="32" height="14" rx="4" fill="#65a30d" stroke="#365314" stroke-width="3"/>
+              <rect x="16" y="72" width="32" height="14" rx="4" fill="#65a30d" stroke="#365314" stroke-width="3"/>
+              <!-- เสื้อซอมบี้สีน้ำตาลขาดๆ -->
+              <rect x="32" y="24" width="38" height="52" rx="6" fill="#78350f" stroke="#451a03" stroke-width="3"/>
+              <!-- หัวเหลี่ยมสีเขียวซอมบี้ -->
+              <rect x="28" y="28" width="44" height="44" rx="8" fill="#84cc16" stroke="#365314" stroke-width="3"/>
+              <!-- ตาซอมบี้สีแดง/ดำ -->
+              <rect x="35" y="38" width="7" height="7" rx="1" fill="#dc2626"/>
+              <rect x="35" y="55" width="7" height="7" rx="1" fill="#dc2626"/>
+              <!-- ปากซอมบี้ -->
+              <path d="M 32 45 L 32 55" stroke="#1a2e05" stroke-width="3.5" stroke-linecap="round"/>
+            </svg>
+          `;
+        }
+
+        layer.appendChild(el);
+      });
+    }
+
+    // อัปเดตตำแหน่งและมุมหันของตัวละคร
+    function updatePlayerVisual(instant = false) {
+      const sprite = document.getElementById('player-sprite');
+      const rotator = document.getElementById('player-rotator');
+
+      if (instant) {
+        sprite.style.transition = 'none';
+        rotator.style.transition = 'none';
+      } else {
+        sprite.style.transition = 'left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), top 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        rotator.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
+      }
+
+      sprite.style.left = `${playerPos.col * 12.5}%`;
+      sprite.style.top = `${playerPos.row * 20}%`;
+      rotator.style.transform = `rotate(${visualRotation}deg)`;
+
+      if (instant) {
+        void sprite.offsetWidth;
+        sprite.style.transition = '';
+        rotator.style.transition = '';
+      }
+    }
+
+    /**
+     * ==========================================
+     * การจัดการชุดคำสั่ง (Coding Sequence 1-18)
+     * ==========================================
+     */
+    function addCommand(cmdType) {
+      if (isRunning) return;
+      if (commands.length >= MAX_SLOTS) {
+        sfx.bump();
+        showModal('⚠️', 'บล็อกคำสั่งเต็มแล้ว!', 'หนูใส่สคริปต์ครบ 18 ช่องแล้ว ลองกดปุ่ม "เริ่ม" สีเขียวเพื่อดูผลลัพธ์ หรือคลิกช่องคำสั่งเพื่อแก้ไขนะ', [
+          { text: 'ตกลง', className: 'bg-[#00b06f] text-white', onClick: closeModal }
+        ]);
+        return;
+      }
+
+      sfx.click();
+      commands.push(cmdType);
+      renderSequenceSlots();
+    }
+
+    function undoCommand() {
+      if (isRunning || commands.length === 0) return;
+      sfx.delete();
+      commands.pop();
+      renderSequenceSlots();
+    }
+
+    function clearCommands() {
+      if (isRunning || commands.length === 0) return;
+      sfx.delete();
+      commands = [];
+      renderSequenceSlots();
+    }
+
+    function removeCommandAt(index) {
+      if (isRunning || index >= commands.length) return;
+      sfx.delete();
+      commands.splice(index, 1);
+      renderSequenceSlots();
+    }
+
+    // แสดงไอคอนคำสั่งในช่อง 1 - 18
+    function renderSequenceSlots(activeIndex = -1) {
+      for (let i = 0; i < MAX_SLOTS; i++) {
+        const slot = document.getElementById(`slot-${i}`);
+        if (!slot) continue;
+
+        slot.classList.remove('slot-active');
+        if (i === activeIndex) {
+          slot.classList.add('slot-active');
+        }
+
+        const cmd = commands[i];
+        if (!cmd) {
+          slot.className = 'relative aspect-[4/3] lg:aspect-auto lg:h-14 rounded-xl border-2 border-dashed border-slate-500 bg-slate-800/80 flex items-center justify-center cursor-pointer transition-all hover:bg-slate-700/80 select-none overflow-hidden';
+          slot.innerHTML = `<span class="text-xl sm:text-2xl font-black text-slate-500">${i + 1}</span>`;
+        } else {
+          let iconHtml = '';
+          let label = '';
+          let borderCol = 'border-slate-300';
+
+          if (cmd === 'MOVE') {
+            iconHtml = `<svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#00b06f]" viewBox="0 0 36 36" fill="currentColor"><path d="M6 14h14V8l12 10-12 10v-6H6z"/></svg>`;
+            label = 'เดิน';
+            borderCol = 'border-[#00b06f]';
+          } else if (cmd === 'LEFT') {
+            iconHtml = `<svg class="w-6 h-6 sm:w-7 sm:h-7 text-sky-500" viewBox="0 0 36 36" fill="currentColor"><path d="M14 6L4 14l10 8v-5h8c2.2 0 4 1.8 4 4v9h6v-9c0-5.5-4.5-10-10-10h-8V6z"/></svg>`;
+            label = 'หันซ้าย';
+            borderCol = 'border-sky-500';
+          } else if (cmd === 'RIGHT') {
+            iconHtml = `<svg class="w-6 h-6 sm:w-7 sm:h-7 text-amber-500" viewBox="0 0 36 36" fill="currentColor"><path d="M22 6l10 8-10 8v-5h-8c-2.2 0-4 1.8-4 4v9H4v-9c0-5.5 4.5-10 10-10h8V6z"/></svg>`;
+            label = 'หันขวา';
+            borderCol = 'border-amber-500';
+          }
+
+          slot.className = `relative aspect-[4/3] lg:aspect-auto lg:h-14 rounded-xl border-2 border-solid ${borderCol} bg-white shadow-sm flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-rose-50 select-none ${i === activeIndex ? 'slot-active' : ''}`;
+          slot.innerHTML = `
+            <span class="absolute top-0.5 left-1.5 text-[10px] sm:text-xs font-black text-slate-400">${i + 1}</span>
+            ${iconHtml}
+            <span class="text-[11px] sm:text-xs font-extrabold text-slate-800 leading-none">${label}</span>
+          `;
+        }
+      }
+    }
+
+    /**
+     * ==========================================
+     * ระบบประมวลผลอัลกอริทึม (Execution Engine)
+     * ==========================================
+     */
+    function toggleRun() {
+      if (isRunning) {
+        sfx.click();
+        stopExecution();
+        resetCharacterToStart();
+        renderSequenceSlots(-1);
+        return;
+      }
+
+      if (commands.length === 0) {
+        sfx.bump();
+        showModal('🤔', 'ยังไม่มีบล็อกคำสั่งเลย!', 'ให้หนูกดปุ่ม "เดิน", "หันซ้าย" หรือ "หันขวา" ด้านล่าง เพื่อสร้างสคริปต์ก่อนกดปุ่มเริ่มสีเขียวนะ', [
+          { text: 'เข้าใจแล้ว', className: 'bg-[#00b06f] text-white', onClick: closeModal }
+        ]);
+        return;
+      }
+
+      startExecution();
+    }
+
+    function setControlsDisabled(disabled) {
+      ['btn-move', 'btn-left', 'btn-right', 'btn-undo', 'btn-clear'].forEach(id => {
+        document.getElementById(id).disabled = disabled;
+      });
+    }
+
+    function startExecution() {
+      isRunning = true;
+      pauseLevelTimer(); // หยุดเวลาชั่วคราวระหว่างตัวละครกำลังเดินตามสคริปต์
+      setControlsDisabled(true);
+      resetCharacterToStart();
+
+      const runBtn = document.getElementById('btn-run');
+      runBtn.className = 'game-btn flex-1 min-w-[130px] sm:min-w-[165px] h-16 sm:h-20 bg-gradient-to-b from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-2xl border-4 border-white shadow-[0_6px_0_#c2410c] flex items-center justify-center gap-2 px-4 cursor-pointer';
+      document.getElementById('run-icon').textContent = '⏹';
+      document.getElementById('run-text').textContent = 'หยุด';
+
+      let stepIdx = 0;
+
+      function executeNextStep() {
+        if (!isRunning) return;
+
+        if (stepIdx >= commands.length) {
+          renderSequenceSlots(-1);
+          stopExecution();
+          const lvl = LEVELS[currentLevelIdx];
+          if (collectedCoinKeys.size < lvl.coins.length) {
+            sfx.bump();
+            showModal('🪙', 'ยังเก็บ Robux ไม่ครบนะ!', 'ตัวละครเดินครบตามสคริปต์แล้ว แต่ยังเหลือเหรียญ Robux อยู่ ลองเพิ่มคำสั่งต่ออีกนิดนะ', [
+              { text: 'ปรับสคริปต์ต่อ', className: 'bg-[#00b06f] text-white', onClick: () => { closeModal(); resetCharacterToStart(); resumeLevelTimer(); } }
+            ]);
+          }
+          return;
+        }
+
+        renderSequenceSlots(stepIdx);
+        const cmd = commands[stepIdx];
+
+        if (cmd === 'LEFT') {
+          playerPos.dir = (playerPos.dir + 3) % 4;
+          visualRotation -= 90;
+          sfx.turn();
+          updatePlayerVisual(false);
+          stepIdx++;
+          runTimer = setTimeout(executeNextStep, 520);
+
+        } else if (cmd === 'RIGHT') {
+          playerPos.dir = (playerPos.dir + 1) % 4;
+          visualRotation += 90;
+          sfx.turn();
+          updatePlayerVisual(false);
+          stepIdx++;
+          runTimer = setTimeout(executeNextStep, 520);
+
+        } else if (cmd === 'MOVE') {
+          const dRow = [0, 1, 0, -1][playerPos.dir];
+          const dCol = [1, 0, -1, 0][playerPos.dir];
+          const nextRow = playerPos.row + dRow;
+          const nextCol = playerPos.col + dCol;
+
+          // 1. ตรวจสอบตกขอบสนาม Obby
+          if (nextRow < 0 || nextRow >= ROWS || nextCol < 0 || nextCol >= COLS) {
+            handleCollision('อุ๊ย! เดินตกขอบสนาม Obby แล้ว ลองเช็กทิศทางลูกศรสีเขียวดูนะ');
+            return;
+          }
+
+          playerPos.row = nextRow;
+          playerPos.col = nextCol;
+          sfx.step();
+          updatePlayerVisual(false);
+
+          // 2. ตรวจสอบชนบล็อกลาวาหรือซอมบี้
+          const lvl = LEVELS[currentLevelIdx];
+          const hitObs = lvl.obstacles.find(o => o.row === nextRow && o.col === nextCol);
+          if (hitObs) {
+            const msg = hitObs.type === 'lava' 
+              ? 'ร้อนจัง! เดินเหยียบบล็อกลาวา (Lava) เข้าแล้ว ลองแก้คำสั่งเดินอ้อมลาวาดูนะ'
+              : 'อุ๊ย! เดินชนซอมบี้บล็อกเข้าแล้ว ลองแก้คำสั่งหลบซอมบี้ดูนะ';
+            setTimeout(() => {
+              handleCollision(msg);
+            }, 300);
+            return;
+          }
+
+          // 3. ตรวจสอบเก็บเหรียญ Robux
+          const coinKey = `${nextRow},${nextCol}`;
+          const foundCoin = lvl.coins.some(c => c.row === nextRow && c.col === nextCol);
+          if (foundCoin && !collectedCoinKeys.has(coinKey)) {
+            setTimeout(() => {
+              collectedCoinKeys.add(coinKey);
+              sfx.coin();
+              updateCoinCounterUI();
+              renderItemsOnBoard();
+
+              if (collectedCoinKeys.size === lvl.coins.length) {
+                renderSequenceSlots(-1);
+                stopExecution();
+                setTimeout(() => handleLevelWin(), 350);
+                return;
+              }
+            }, 220);
+          }
+
+          stepIdx++;
+          runTimer = setTimeout(executeNextStep, 580);
+        }
+      }
+
+      runTimer = setTimeout(executeNextStep, 250);
+    }
+
+    function stopExecution() {
+      isRunning = false;
+      if (runTimer) clearTimeout(runTimer);
+      setControlsDisabled(false);
+
+      const runBtn = document.getElementById('btn-run');
+      runBtn.className = 'game-btn flex-1 min-w-[130px] sm:min-w-[165px] h-16 sm:h-20 bg-[#00b06f] hover:bg-[#00c47c] text-white rounded-2xl border-4 border-white shadow-[0_6px_0_#007a4d] flex items-center justify-center gap-2 px-4 cursor-pointer';
+      document.getElementById('run-icon').textContent = '▶';
+      document.getElementById('run-text').textContent = 'เริ่ม';
+      resumeLevelTimer();
+    }
+
+    // ระบบ Debugging: ลดหัวใจ 1 ดวง และเก็บชุดคำสั่งเดิมในช่อง 1-18 ไว้ให้แก้
+    function handleCollision(reasonText) {
+      stopExecution();
+      pauseLevelTimer();
+      sfx.bump();
+
+      const sprite = document.getElementById('player-sprite');
+      sprite.classList.add('bump-anim');
+      setTimeout(() => sprite.classList.remove('bump-anim'), 500);
+
+      hearts = Math.max(0, hearts - 1);
+      updateHeartsUI();
+
+      setTimeout(() => {
+        renderSequenceSlots(-1);
+        if (hearts === 0) {
+          // บันทึกเวลาและสถิติสะสมก่อนแสดงหน้าต่างสรุปผลตอน Game Over
+          sessionStats.totalTimeSec += levelElapsedSec;
+          sessionStats.totalBlocksUsed += commands.length;
+          showFinalSummary(false);
+        } else {
+          showModal('🔥', 'พบจุดผิดพลาด (Bug!)', `${reasonText}\n(สคริปต์เดิมยังอยู่ครบทั้ง 18 ช่อง ลองแก้ไขจุดที่ผิดได้เลย!)`, [
+            {
+              text: '🛠️ แก้ไขสคริปต์',
+              className: 'bg-amber-500 hover:bg-amber-600 text-white',
+              onClick: () => {
+                closeModal();
+                resetCharacterToStart();
+                resumeLevelTimer();
+              }
+            }
+          ]);
+        }
+      }, 450);
+    }
+
+    // จัดการเมื่อผ่านด่าน Obby สำเร็จ
+    function handleLevelWin() {
+      pauseLevelTimer();
+      sfx.win();
+
+      const lvl = LEVELS[currentLevelIdx];
+      // คำนวณโบนัสความเร็ว (Speed Bonus) และโบนัสความแม่นยำ (Accuracy Bonus)
+      let speedBonus = 100;
+      if (levelElapsedSec <= lvl.targetTime) {
+        speedBonus = 300;
+      } else if (levelElapsedSec <= lvl.targetTime + 20) {
+        speedBonus = 200;
+      }
+      const accuracyBonus = hearts * 100;
+
+      // บันทึกสถิติของด่านนี้ (หากเล่นซ้ำด่านเดิมจะอัปเดตไม่ให้นับเหรียญเกิน)
+      if (!sessionStats.completedLevels.has(lvl.id)) {
+        sessionStats.completedLevels.add(lvl.id);
+        sessionStats.totalRobuxCollected += lvl.coins.length;
+      }
+      sessionStats.totalTimeSec += levelElapsedSec;
+      sessionStats.totalBlocksUsed += commands.length;
+      sessionStats.speedBonusTotal += speedBonus;
+      sessionStats.accuracyBonusTotal += accuracyBonus;
+      updateTimerUI();
+
+      const starsStr = '⭐'.repeat(hearts) + '☆'.repeat(3 - hearts);
+      const isLastLevel = currentLevelIdx === LEVELS.length - 1;
+
+      if (isLastLevel) {
+        // ผ่านครบทั้ง 5 ด่าน -> แสดงหน้าจอสรุปผลการเล่นตอนจบเกมทันที
+        showFinalSummary(true);
+        return;
+      }
+
+      const actions = [
+        {
+          text: 'เล่นด่านนี้อีกครั้ง',
+          className: 'bg-slate-200 hover:bg-slate-300 text-slate-800',
+          onClick: () => {
+            closeModal();
+            loadLevel(currentLevelIdx);
+          }
+        },
+        {
+          text: 'ด่าน Obby ถัดไป ▶',
+          className: 'bg-[#00b06f] hover:bg-[#00c47c] text-white',
+          onClick: () => {
+            closeModal();
+            loadLevel(currentLevelIdx + 1);
+          }
+        }
+      ];
+
+      showModal(
+        '🏆',
+        'เย้! ผ่านด่าน Obby แล้ว!',
+        `ใช้เวลา ${formatTime(levelElapsedSec)} | ใช้ไป ${commands.length} บล็อก\nโบนัสความเร็ว +${speedBonus} | โบนัสพลังชีวิต +${accuracyBonus}`,
+        actions,
+        starsStr
+      );
+    }
+
+    /**
+     * ==========================================
+     * หน้าต่างสรุปผลการเล่นตอนจบเกม (Final Summary Modal)
+     * ==========================================
+     */
+    function showFinalSummary(isVictory) {
+      pauseLevelTimer();
+      const totalAllRobux = LEVELS.reduce((sum, l) => sum + l.coins.length, 0);
+      const baseScore = (sessionStats.completedLevels.size * 500) + (sessionStats.totalRobuxCollected * 150);
+      const bonusScore = sessionStats.speedBonusTotal + sessionStats.accuracyBonusTotal;
+      const finalScore = baseScore + bonusScore;
+
+      // กำหนดชื่อตัวละคร
+      const avatarNames = {
+        noob: 'Noob (ตัวละครคลาสสิก)',
+        bacon: 'Bacon Hair (นักผจญภัยสุดเท่)',
+        girl: 'Girl Avatar (สาวน้อยนักสร้าง)'
+      };
+
+      // คำนวณยศเหรียญรางวัล (Rank Badge) สำหรับ 10 ด่าน
+      let rankTitle = 'ผู้ฝึกหัดโค้ดดิ้ง (Rookie Coder)';
+      let rankStars = '⭐☆☆';
+      if (isVictory && finalScore >= 11000) {
+        rankTitle = 'ปรมาจารย์โค้ดดิ้ง Roblox (Master Coder)';
+        rankStars = '⭐⭐⭐';
+      } else if (isVictory || sessionStats.completedLevels.size >= 5) {
+        rankTitle = 'นักผจญภัย Obby มือโปร (Pro Builder)';
+        rankStars = '⭐⭐☆';
+      }
+
+      // เก็บข้อมูลสรุปล่าสุดไว้สำหรับวาดลงเกียรติบัตร
+      window.latestSummaryResult = {
+        isVictory,
+        finalScore,
+        rankTitle,
+        rankStars,
+        completedCount: sessionStats.completedLevels.size,
+        totalRobux: sessionStats.totalRobuxCollected,
+        totalAllRobux,
+        totalTimeText: formatTime(sessionStats.totalTimeSec),
+        totalBlocks: sessionStats.totalBlocksUsed
+      };
+
+      // อัปเดตข้อมูลบนหน้าต่างสรุปผล
+      const banner = document.getElementById('summary-banner-badge');
+      const mainTitle = document.getElementById('summary-main-title');
+      if (isVictory) {
+        banner.textContent = `VICTORY • พิชิตครบ ${LEVELS.length} ด่าน ROBLOX OBBY`;
+        banner.className = 'inline-block px-4 py-1 rounded-full bg-amber-400 text-slate-950 font-black text-xs sm:text-sm tracking-wider uppercase mb-1 shadow';
+        mainTitle.textContent = '🏆 ยินดีด้วย! ภารกิจสำเร็จ!';
+      } else {
+        banner.textContent = 'GAME OVER • จบการท้าทาย';
+        banner.className = 'inline-block px-4 py-1 rounded-full bg-rose-500 text-white font-black text-xs sm:text-sm tracking-wider uppercase mb-1 shadow';
+        mainTitle.textContent = '💔 พลังชีวิตหมดแล้ว ลองใหม่นะ!';
+      }
+
+      document.getElementById('summary-student-info').textContent = `👤 ${studentInfo.name} | ชั้น ${studentInfo.className} เลขที่ ${studentInfo.number}`;
+      document.getElementById('summary-avatar-preview').innerHTML = getAvatarSvgHtml(currentAvatar);
+      document.getElementById('summary-avatar-name').textContent = avatarNames[currentAvatar];
+      document.getElementById('summary-rank-title').textContent = rankTitle;
+      document.getElementById('summary-rank-stars').textContent = rankStars;
+
+      document.getElementById('summary-robux').textContent = `R$ ${sessionStats.totalRobuxCollected} / ${totalAllRobux}`;
+      document.getElementById('summary-time').textContent = formatTime(sessionStats.totalTimeSec);
+      document.getElementById('summary-blocks').textContent = `${sessionStats.totalBlocksUsed} บล็อก`;
+      document.getElementById('summary-bonus').textContent = `+${bonusScore.toLocaleString()}`;
+      document.getElementById('summary-total-score').textContent = `${finalScore.toLocaleString()} คะแนน`;
+
+      const modal = document.getElementById('final-summary-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeFinalSummary() {
+      const modal = document.getElementById('final-summary-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    /**
+     * ==========================================
+     * ระบบสร้างและดาวน์โหลดเกียรติบัตรดิจิทัล (HTML5 Canvas Certificate)
+     * ==========================================
+     */
+    function downloadCertificate() {
+      sfx.win();
+      const res = window.latestSummaryResult || {
+        finalScore: 0,
+        rankTitle: 'นักผจญภัย Roblox Coding',
+        rankStars: '⭐⭐⭐',
+        completedCount: sessionStats.completedLevels.size,
+        totalRobux: sessionStats.totalRobuxCollected,
+        totalAllRobux: 28,
+        totalTimeText: formatTime(sessionStats.totalTimeSec),
+        totalBlocks: sessionStats.totalBlocksUsed
+      };
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 1200;
+      canvas.height = 850;
+      const ctx = canvas.getContext('2d');
+
+      // 1. พื้นหลังไล่เฉดสีฟ้า-ครีมสไตล์เกมสดใส
+      const bgGrad = ctx.createLinearGradient(0, 0, 1200, 850);
+      bgGrad.addColorStop(0, '#f0f9ff');
+      bgGrad.addColorStop(0.5, '#ffffff');
+      bgGrad.addColorStop(1, '#ecfdf5');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, 1200, 850);
+
+      // 2. กรอบทองและกรอบเขียวมรกต Roblox
+      ctx.strokeStyle = '#00b06f';
+      ctx.lineWidth = 18;
+      ctx.strokeRect(28, 28, 1144, 794);
+
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(48, 48, 1104, 754);
+
+      // 3. แถบหัวเรื่องเกียรติบัตรด้านบน
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.roundRect(240, 82, 720, 62, 31);
+      ctx.fill();
+
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 28px Kanit, Prompt, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🏆 เกียรติบัตรการเรียนรู้วิทยาการคำนวณ ชั้น ป.2 🏆', 600, 123);
+
+      // 4. ชื่อหัวข้อหลัก
+      ctx.fillStyle = '#00b06f';
+      ctx.font = '900 50px Kanit, Prompt, sans-serif';
+      ctx.fillText('ROBLOX OBBY CODING CHALLENGE', 600, 210);
+
+      ctx.fillStyle = '#475569';
+      ctx.font = '600 28px Kanit, Prompt, sans-serif';
+      ctx.fillText('ขอมอบเกียรติบัตรฉบับนี้เพื่อแสดงว่า', 600, 268);
+
+      // 5. ชื่อ-นามสกุลนักเรียน
+      ctx.fillStyle = '#0f172a';
+      ctx.font = '900 56px Kanit, Prompt, sans-serif';
+      ctx.fillText(studentInfo.name, 600, 345);
+
+      // เส้นใต้ชื่อ
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(260, 365);
+      ctx.lineTo(940, 365);
+      ctx.stroke();
+
+      // ชั้นและเลขที่
+      ctx.fillStyle = '#0284c7';
+      ctx.font = 'bold 32px Kanit, Prompt, sans-serif';
+      ctx.fillText(`ชั้นประถมศึกษาปีที่ ${studentInfo.className.replace('ป.', '')}   เลขที่ ${studentInfo.number}`, 600, 415);
+
+      // 6. คำบรรยายความสำเร็จ
+      ctx.fillStyle = '#334155';
+      ctx.font = '600 26px Kanit, Prompt, sans-serif';
+      ctx.fillText('ได้ผ่านการฝึกทักษะการคิดเชิงคำนวณ การเขียนอัลกอริทึม และการแก้ไขข้อผิดพลาด (Debugging)', 600, 475);
+      ctx.fillText(`ได้รับตำแหน่ง "${res.rankTitle}" ${res.rankStars}`, 600, 518);
+
+      // 7. กล่องสรุปคะแนน 4 ช่องตรงกลางล่าง
+      const boxY = 560;
+      const boxH = 125;
+      const statsItems = [
+        { label: 'คะแนนรวมสุทธิ', value: `${res.finalScore.toLocaleString()} คะแนน`, color: '#00b06f' },
+        { label: 'ผ่านด่าน Obby', value: `${res.completedCount} / ${LEVELS.length} ด่าน`, color: '#0284c7' },
+        { label: 'เหรียญ Robux', value: `R$ ${res.totalRobux} / ${res.totalAllRobux}`, color: '#d97706' },
+        { label: 'เวลารวม / คำสั่ง', value: `${res.totalTimeText} (${res.totalBlocks} บล็อก)`, color: '#7c3aed' }
+      ];
+
+      statsItems.forEach((item, idx) => {
+        const boxX = 95 + idx * 258;
+        ctx.fillStyle = '#f8fafc';
+        ctx.strokeStyle = item.color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.roundRect(boxX, boxY, 238, boxH, 18);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = 'bold 20px Kanit, Prompt, sans-serif';
+        ctx.fillText(item.label, boxX + 119, boxY + 42);
+
+        ctx.fillStyle = item.color;
+        ctx.font = '900 26px Kanit, Prompt, sans-serif';
+        ctx.fillText(item.value, boxX + 119, boxY + 90);
+      });
+
+      // 8. วันที่ออกเกียรติบัตรด้านล่าง
+      const todayStr = new Date().toLocaleDateString('th-TH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      ctx.fillStyle = '#64748b';
+      ctx.font = '600 22px Kanit, Prompt, sans-serif';
+      ctx.fillText(`ให้ไว้ ณ วันที่ ${todayStr} • สื่อนวัตกรรมรายวิชาวิทยาการคำนวณ (ว 4.2 ป.2/1)`, 600, 755);
+
+      // สั่งดาวน์โหลดเป็นไฟล์รูปภาพ PNG
+      const link = document.createElement('a');
+      const safeName = studentInfo.name.replace(/\s+/g, '_');
+      link.download = `เกียรติบัตร_RobloxCoding_${safeName}_เลขที่${studentInfo.number}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    /**
+     * ==========================================
+     * ระบบหน้าต่างแจ้งเตือนระหว่างด่าน (Modal) & เริ่มต้นเกม
+     * ==========================================
+     */
+    function showModal(emoji, title, message, actions = [], stars = '') {
+      document.getElementById('modal-emoji').textContent = emoji;
+      document.getElementById('modal-title').textContent = title;
+      document.getElementById('modal-message').innerHTML = message.replace(/\n/g, '<br>');
+
+      const starsEl = document.getElementById('modal-stars');
+      if (stars) {
+        starsEl.textContent = stars;
+        starsEl.classList.remove('hidden');
+      } else {
+        starsEl.classList.add('hidden');
+      }
+
+      const actionsContainer = document.getElementById('modal-actions');
+      actionsContainer.innerHTML = '';
+      actions.forEach(act => {
+        const btn = document.createElement('button');
+        btn.textContent = act.text;
+        btn.className = `game-btn px-5 py-2.5 rounded-xl font-extrabold text-base shadow-md cursor-pointer ${act.className}`;
+        btn.onclick = () => {
+          sfx.click();
+          act.onClick();
+        };
+        actionsContainer.appendChild(btn);
+      });
+
+      const modal = document.getElementById('game-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('game-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function initGame() {
+      buildGridCells();
+      renderAvatarGraphic();
+      // วาดตัวอย่างตัวละครในหน้าต่างลงทะเบียนก่อนเริ่มเกม
+      ['noob', 'bacon', 'girl'].forEach(type => {
+        const el = document.getElementById(`login-preview-${type}`);
+        if (el) el.innerHTML = getAvatarSvgHtml(type);
+      });
+      buildSequenceSlots();
+      buildLevelButtons();
+      loadLevel(0);
+      // หยุดจับเวลาไว้ก่อนจนกว่านักเรียนจะกรอกชื่อและกดปุ่มเริ่มผจญภัย
+      pauseLevelTimer();
+    }
+
+    window.onload = initGame;
+  </script>
+</body>
+</html>
